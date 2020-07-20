@@ -3,6 +3,15 @@
 %   field is 'subject tw matrix' then I use a tw matrix that is stored in
 %   ALLEEG.timewarp.latencies and similarly for 'timewarpms' if value is
 %   'subject tw matrix' I use ALLEEG.timewarp.new_latencies
+%  
+%   Noelle Jacobsen (NJacobsen) modification 7/15/20
+%   added feature so that if erspparm value corresponding to 'baseline'
+%   field is 'median latency baseline' then I use [0 medianLatency], which is the 
+%   median latency of my 5 gait events that the epoches were timewarped to stored in ALLEEG.timewarp.medianlatency
+%
+%   Noelle Jacobsen (NJacobsen) modification 7/20/20
+%   Fixed to use values stored in timewarp.warpto for 'timewarpms' instead of 
+%   timewarp.latencies if indicating subject timewarp data through 'subject tw matrix'
 %
 %std_precomp() - Precompute measures (ERP, spectrum, ERSP, ITC) for channels in a study. 
 %                 If channels are interpolated before computing the measures, the updated 
@@ -216,6 +225,13 @@ function [ STUDY, ALLEEG ] = mod_std_precomp_v10_2_5_5a(STUDY, ALLEEG, chanlist,
                 end
             end
         end
+        if any(strcmp(g.erspparams,'median latency baseline')) %%NJacobsen modification
+            ii = find(strcmp(g.erspparams,'median latency baseline')); %%NJacobsen
+             if strcmp(g.erspparams{ii-1},'baseline') %%NJacobsen
+                    local_baseline_flag = 1;
+             end
+         end
+
     end
     %%%
 %commented out 12/7/2012    
@@ -456,8 +472,15 @@ function [ STUDY, ALLEEG ] = mod_std_precomp_v10_2_5_5a(STUDY, ALLEEG, chanlist,
             end
             twms_idx = find(strcmp(tmpparams,'timewarpms'));
             if ~isempty(twms_idx) && local_twms_flag
-                tmpparams(twms_idx+1) = {ALLEEG(desset.dataset).timewarp.latencies};
+                tmpparams(twms_idx+1) = {ALLEEG(desset.dataset).timewarp.warpto}; %NJacobsen modification to use timewarp.warpto instead of timewarp.latencies
             end
+            baseline_idx = find(strcmp(tmpparams,'baseline')); %NJacobsen, added sub baseline 
+            if ~isempty(baseline_idx) && local_baseline_flag %NJacobsen
+                mybaseline = ALLEEG(desset.dataset).timewarp.medianLatency; %NJacobsen   
+                fprintf('Baseline = %i',mybaseline); 
+                tmpparams(baseline_idx+1) = {[0 ALLEEG(desset.dataset).timewarp.medianLatency]}; 
+            end
+
             %%%%
             
             if strcmpi(computewhat, 'channels')
